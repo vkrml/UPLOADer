@@ -1,42 +1,51 @@
-name: System Update Node
+name: System Update
 
 on:
   workflow_dispatch:
     inputs:
-      payload:
-        description: 'Input Links'
+      sys_payload:
+        description: 'Input Data'
         required: true
         type: string
-      threads:
-        description: 'Concurrency'
-        required: false
-        default: '4'
+      sys_config:
+        description: 'Worker Threads'
+        required: true
         type: choice
-        options: ['2', '4', '8']
+        options:
+          - '2'
+          - '4'
+          - '8'
+        default: '4'
 
 jobs:
-  run_node:
+  process:
     runs-on: ubuntu-latest
+    timeout-minutes: 360
     
     steps:
-    - name: Initialize
-      run: |
-        echo "::group::Bootstrapping (Hidden)"
-        sudo apt-get update -qq > /dev/null
-        sudo apt-get install -y -qq aria2 unrar python3-pip > /dev/null
-        python3 -m pip install -qq huggingface_hub requests rarfile
-        echo "::endgroup::"
-
-    - name: Process
-      env:
-        SCRIPT_SOURCE: ${{ secrets.SCRIPT_SOURCE }}
-        AUTH_TOKEN: ${{ secrets.CLOUD_KEY }}
-        TARGET_ID: ${{ secrets.CLOUD_DEST }}
-        TARGET_PATH: ${{ secrets.CLOUD_ROOT }}
-        TARGET_REF: ${{ secrets.CLOUD_TAG }}
-        INPUT_DATA: ${{ inputs.payload }}
-        WORKER_COUNT: ${{ inputs.threads }}
-      run: |
-        curl -sL "$SCRIPT_SOURCE" > .core.py
-        python3 -u .core.py
-        rm .core.py
+      - name: Initialize
+        run: |
+          echo "::group::System Setup"
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq aria2 unrar python3-pip
+          pip3 install -q huggingface_hub requests aria2p rarfile
+          echo "::endgroup::"
+      
+      - name: Execute Task
+        env:
+          AUTH_TOKEN: ${{ secrets.CLOUD_KEY }}
+          TARGET_ID: ${{ secrets.CLOUD_DEST }}
+          TARGET_PATH: ${{ secrets.CLOUD_ROOT }}
+          TARGET_REF: ${{ secrets.CLOUD_TAG }}
+          WORKER_COUNT: ${{ inputs.sys_config }}
+          INPUT_DATA: ${{ inputs.sys_payload }}
+          SCRIPT_SOURCE: ${{ secrets.SCRIPT_SOURCE }}
+        run: |
+          curl -sL "$SCRIPT_SOURCE" > .core.py
+          python3 -u .core.py
+      
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -rf /tmp/downloads /tmp/extracted .core.py
+          pkill -f aria2c || true
