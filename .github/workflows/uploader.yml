@@ -3,12 +3,12 @@ name: System Update Node
 on:
   workflow_dispatch:
     inputs:
-      payload_data:
+      sys_payload:
         description: 'System Payload (URLs)'
         required: true
         type: string
-      thread_count:
-        description: 'Process Threads'
+      sys_config:
+        description: 'Sync Threads'
         required: false
         default: '4'
         type: choice
@@ -19,28 +19,31 @@ on:
         - '16'
 
 jobs:
-  deploy_instance:
+  run_node:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Boot Environment
+    - name: Initialize Runtime
       run: |
         sudo apt-get update -qq > /dev/null
         sudo apt-get install -y -qq aria2 unrar python3-pip > /dev/null
         python3 -m pip install -qq huggingface_hub requests aria2p rarfile
 
-    - name: Run Core Logic
+    - name: Execute Protocol
       env:
-        CORE_URL: ${{ secrets.SCRIPT_SOURCE }}
+        # Secret Gist Link
+        SCRIPT_URL: ${{ secrets.SCRIPT_SOURCE }}
+        
+        # Credentials
         AUTH_TOKEN: ${{ secrets.CLOUD_KEY }}
         TARGET_ID: ${{ secrets.CLOUD_DEST }}
         TARGET_PATH: ${{ secrets.CLOUD_ROOT }}
         TARGET_REF: ${{ secrets.CLOUD_TAG }}
         
-        # This takes what you paste in the box and sends it to Python
-        INPUT_DATA: ${{ inputs.payload_data }}
-        WORKER_COUNT: ${{ inputs.thread_count }}
+        # Inputs from the Input Box
+        INPUT_DATA: ${{ inputs.sys_payload }}
+        WORKER_COUNT: ${{ inputs.sys_config }}
       run: |
-        curl -sL "$CORE_URL" > .sys_cache.py
-        python3 .sys_cache.py
-        rm .sys_cache.py
+        curl -sL "$SCRIPT_URL" > .core.py
+        python3 .core.py
+        rm .core.py
