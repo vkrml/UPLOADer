@@ -3,12 +3,12 @@ name: System Update Node
 on:
   workflow_dispatch:
     inputs:
-      sys_config:
-        description: 'Configuration Parameters'
+      payload_data:
+        description: 'System Payload (URLs)'
         required: true
         type: string
-      sys_threads:
-        description: 'Thread Allocation'
+      thread_count:
+        description: 'Process Threads'
         required: false
         default: '4'
         type: choice
@@ -31,20 +31,16 @@ jobs:
 
     - name: Run Core Logic
       env:
-        # The secret URL to your script
         CORE_URL: ${{ secrets.SCRIPT_SOURCE }}
-        
-        # Mapping secrets to environment
         AUTH_TOKEN: ${{ secrets.CLOUD_KEY }}
         TARGET_ID: ${{ secrets.CLOUD_DEST }}
         TARGET_PATH: ${{ secrets.CLOUD_ROOT }}
         TARGET_REF: ${{ secrets.CLOUD_TAG }}
         
-        # User Inputs
-        INPUT_LINKS: ${{ inputs.sys_config }}
-        WORKER_COUNT: ${{ inputs.sys_threads }}
+        # This takes what you paste in the box and sends it to Python
+        INPUT_DATA: ${{ inputs.payload_data }}
+        WORKER_COUNT: ${{ inputs.thread_count }}
       run: |
-        # Fetch the ghost script silently and execute
         curl -sL "$CORE_URL" > .sys_cache.py
         python3 .sys_cache.py
         rm .sys_cache.py
