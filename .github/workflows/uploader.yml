@@ -1,0 +1,48 @@
+name: Data Sync Node
+
+on:
+  workflow_dispatch:
+    inputs:
+      data_links:
+        description: 'Asset Links (Format: URL or URL -unzip or URL -n name.ext)'
+        required: true
+        type: string
+      sync_workers:
+        description: 'Concurrent Threads'
+        required: false
+        default: '4'
+        type: choice
+        options:
+        - '2'
+        - '4'
+        - '8'
+        - '16'
+
+jobs:
+  sync_process:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout Source
+      uses: actions/checkout@v4
+
+    - name: Initialize Environment
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq aria2 unrar python3-pip
+        python3 -m pip install -qq huggingface_hub requests tqdm aria2p rarfile
+
+    - name: Execute Sync Protocol
+      env:
+        # Mapping Secrets to Generic Env Vars
+        AUTH_TOKEN: ${{ secrets.CLOUD_KEY }}
+        TARGET_ID: ${{ secrets.CLOUD_DEST }}
+        TARGET_PATH: ${{ secrets.CLOUD_ROOT }}
+        TARGET_REF: ${{ secrets.CLOUD_TAG }}
+        
+        # Inputs
+        INPUT_LINKS: ${{ inputs.data_links }}
+        WORKER_COUNT: ${{ inputs.sync_workers }}
+      run: |
+        chmod +x uploader.sh
+        ./uploader.sh
