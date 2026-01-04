@@ -24,7 +24,6 @@ jobs:
         echo "::group::Bootstrapping (Hidden)"
         sudo apt-get update -qq > /dev/null
         sudo apt-get install -y -qq aria2 unrar python3-pip > /dev/null
-        # Removed aria2p, added requests
         python3 -m pip install -qq huggingface_hub requests rarfile
         echo "::endgroup::"
 
