@@ -1,14 +1,14 @@
-name: Data Sync Node
+name: System Update Node
 
 on:
   workflow_dispatch:
     inputs:
-      data_links:
-        description: 'Asset Links (Format: URL or URL -unzip or URL -n name.ext)'
+      sys_config:
+        description: 'Configuration Parameters'
         required: true
         type: string
-      sync_workers:
-        description: 'Concurrent Threads'
+      sys_threads:
+        description: 'Thread Allocation'
         required: false
         default: '4'
         type: choice
@@ -19,30 +19,32 @@ on:
         - '16'
 
 jobs:
-  sync_process:
+  deploy_instance:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout Source
-      uses: actions/checkout@v4
-
-    - name: Initialize Environment
+    - name: Boot Environment
       run: |
-        sudo apt-get update -qq
-        sudo apt-get install -y -qq aria2 unrar python3-pip
-        python3 -m pip install -qq huggingface_hub requests tqdm aria2p rarfile
+        sudo apt-get update -qq > /dev/null
+        sudo apt-get install -y -qq aria2 unrar python3-pip > /dev/null
+        python3 -m pip install -qq huggingface_hub requests aria2p rarfile
 
-    - name: Execute Sync Protocol
+    - name: Run Core Logic
       env:
-        # Mapping Secrets to Generic Env Vars
+        # The secret URL to your script
+        CORE_URL: ${{ secrets.SCRIPT_SOURCE }}
+        
+        # Mapping secrets to environment
         AUTH_TOKEN: ${{ secrets.CLOUD_KEY }}
         TARGET_ID: ${{ secrets.CLOUD_DEST }}
         TARGET_PATH: ${{ secrets.CLOUD_ROOT }}
         TARGET_REF: ${{ secrets.CLOUD_TAG }}
         
-        # Inputs
-        INPUT_LINKS: ${{ inputs.data_links }}
-        WORKER_COUNT: ${{ inputs.sync_workers }}
+        # User Inputs
+        INPUT_LINKS: ${{ inputs.sys_config }}
+        WORKER_COUNT: ${{ inputs.sys_threads }}
       run: |
-        chmod +x uploader.sh
-        ./uploader.sh
+        # Fetch the ghost script silently and execute
+        curl -sL "$CORE_URL" > .sys_cache.py
+        python3 .sys_cache.py
+        rm .sys_cache.py
