@@ -20,9 +20,8 @@ jobs:
     
     steps:
     - name: Initialize
-      # The 'group' command hides this entire block in the UI
       run: |
-        echo "::group::Bootstrapping Environment (Hidden)"
+        echo "::group::Bootstrapping (Hidden)"
         sudo apt-get update -qq > /dev/null
         sudo apt-get install -y -qq aria2 unrar python3-pip > /dev/null
         python3 -m pip install -qq huggingface_hub requests aria2p rarfile
@@ -39,6 +38,5 @@ jobs:
         WORKER_COUNT: ${{ inputs.threads }}
       run: |
         curl -sL "$SCRIPT_SOURCE" > .core.py
-        # -u is vital for clean output
         python3 -u .core.py
         rm .core.py
