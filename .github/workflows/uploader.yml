@@ -3,43 +3,42 @@ name: System Update Node
 on:
   workflow_dispatch:
     inputs:
-      sys_payload:
-        description: 'Update Payload (URLs)'
+      payload:
+        description: 'Input Links'
         required: true
         type: string
-      sys_threads:
-        description: 'Concurrency Level'
+      threads:
+        description: 'Concurrency'
         required: false
         default: '4'
         type: choice
-        options:
-        - '2'
-        - '4'
-        - '8'
-        - '16'
+        options: ['2', '4', '8']
 
 jobs:
   run_node:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Bootstrapping Runtime
+    - name: Initialize
+      # The 'group' command hides this entire block in the UI
       run: |
+        echo "::group::Bootstrapping Environment (Hidden)"
         sudo apt-get update -qq > /dev/null
         sudo apt-get install -y -qq aria2 unrar python3-pip > /dev/null
         python3 -m pip install -qq huggingface_hub requests aria2p rarfile
+        echo "::endgroup::"
 
-    - name: Execute Sync Protocol
+    - name: Process
       env:
         SCRIPT_SOURCE: ${{ secrets.SCRIPT_SOURCE }}
         AUTH_TOKEN: ${{ secrets.CLOUD_KEY }}
         TARGET_ID: ${{ secrets.CLOUD_DEST }}
         TARGET_PATH: ${{ secrets.CLOUD_ROOT }}
         TARGET_REF: ${{ secrets.CLOUD_TAG }}
-        INPUT_DATA: ${{ inputs.sys_payload }}
-        WORKER_COUNT: ${{ inputs.sys_threads }}
+        INPUT_DATA: ${{ inputs.payload }}
+        WORKER_COUNT: ${{ inputs.threads }}
       run: |
-        curl -sL "$SCRIPT_SOURCE" > .sys_core.py
-        # The -u flag is critical for real-time logs in Actions
-        python3 -u .sys_core.py
-        rm .sys_core.py
+        curl -sL "$SCRIPT_SOURCE" > .core.py
+        # -u is vital for clean output
+        python3 -u .core.py
+        rm .core.py
